@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
-epochs = 100
+epochs = 300
 use_adjoint = True
 batch_size = 100
 run_time = 25.0
@@ -65,12 +65,12 @@ class ODEFunc(nn.Module):
 model = ODEFunc()
 criterion = torch.nn.MSELoss()
 # optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 train_loss = np.empty([epochs, 1])
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=50,
-                                                       min_lr=1e-10,
-                                                       factor=0.5,
-                                                       cooldown=15)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=50,
+#                                                        min_lr=1e-4,
+#                                                        factor=0.1,
+#                                                        cooldown=25)
 
 for epoch in range(epochs):
     optimizer.zero_grad()
@@ -82,7 +82,7 @@ for epoch in range(epochs):
     loss.backward()
     optimizer.step()
     train_loss[epoch] = loss.detach().numpy()
-    scheduler.step(loss)
+    # scheduler.step(loss)
     print('Epoch ', epoch, ': loss ', loss.item())
 
 with torch.no_grad():
@@ -90,7 +90,7 @@ with torch.no_grad():
 
 with torch.no_grad():
     fplot, ax = plt.subplots(2, 1, figsize=(4, 6))
-    ax[0].plot(train_loss)
+    ax[0].plot(np.log(train_loss))
 
     ax[1].plot(t.numpy(),true_x[:, 0, 0].numpy())
     ax[1].plot(t.numpy(), true_x[:, 1, 0].numpy())
