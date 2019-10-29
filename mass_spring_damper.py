@@ -79,6 +79,7 @@ criterion = torch.nn.MSELoss()
 # optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 train_loss = np.empty([epochs, 1])
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[500], gamma=0.1, last_epoch=-1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=50,
 #                                                        min_lr=1e-4,
 #                                                        factor=0.1,
@@ -94,6 +95,7 @@ for epoch in range(epochs):
     loss.backward()
     optimizer.step()
     train_loss[epoch] = loss.detach().numpy()
+    scheduler.step()
     # scheduler.step(loss)
     print('Epoch ', epoch, ': loss ', loss.item())
 
