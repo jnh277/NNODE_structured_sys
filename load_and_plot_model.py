@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from matplotlib import pyplot as plt
+import pandas as pd
+
 
 import numpy as np
 
@@ -53,7 +55,7 @@ with torch.no_grad():
     true_x = odeint(MassSpringDamper(), true_x0, t, method='dopri5')
 
 model2 = ODEFunc()
-model2.load_state_dict(torch.load('./msd_nn.pt'))
+model2.load_state_dict(torch.load('./msd_nn2.pt'))
 model2.eval()
 
 

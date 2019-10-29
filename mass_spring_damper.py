@@ -2,9 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from matplotlib import pyplot as plt
-
+import pandas as pd
 import numpy as np
 
+
+load_data = True
 epochs = 900
 use_adjoint = True
 batch_size = 100
@@ -29,12 +31,22 @@ class MassSpringDamper(nn.Module):
         dx = self.A.mm(x)
         return dx
 
-true_x0 = torch.Tensor([[1.0],[0.0]])
-t = torch.linspace(0.0, run_time, data_size)
 
 
-with torch.no_grad():
-    true_x = odeint(MassSpringDamper(), true_x0, t, method='dopri5')
+if load_data:
+    data = pd.read_csv('data_set_0.csv')
+    x1 = data['y1']
+    n = np.size(x1)
+    true_x = torch.empty(n,2,1)
+    true_x[:, 0, 0] = torch.from_numpy(x1.values)
+    true_x[:, 1, 0] = torch.from_numpy(data['y2'].values)
+    true_x0 = true_x[1, :, :]
+    t = torch.from_numpy(data['time'].values)
+else:
+    with torch.no_grad():
+        true_x0 = torch.Tensor([[1.0], [0.0]])
+        t = torch.linspace(0.0, run_time, data_size)
+        true_x = odeint(MassSpringDamper(), true_x0, t, method='dopri5')
 
 
 def get_batch():
