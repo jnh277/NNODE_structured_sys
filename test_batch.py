@@ -7,8 +7,9 @@ import numpy as np
 
 use_adjoint = True
 
-run_time = 10.0
-data_size = 100
+batch_size = 100
+run_time = 25.0
+data_size = 250
 
 true_x0 = torch.Tensor([[1.5],[-0.0]])
 t = torch.linspace(0.0, run_time, data_size)
@@ -56,18 +57,27 @@ model2 = ODEFunc()
 model2.load_state_dict(torch.load('./msd_nn.pt'))
 model2.eval()
 
+def get_batch():
+    s = np.random.choice(np.arange(data_size-batch_size),replace=False)
+    batch_t = t[s:s+batch_size]-t[s]
+    batch_x0 = true_x[s, :, 0].unsqueeze(1)
+    batch_x = true_x[s:s+batch_size, :, 0].unsqueeze(2)
+    return batch_x0, batch_t, batch_x
+
+
+batch_x0, batch_t, batch_x = get_batch()
 
 
 with torch.no_grad():
-    pred_x = odeint(model2, true_x0, t, method='dopri5')
+    pred_x = odeint(model2, batch_x0, batch_t, method='dopri5')
 
 
 with torch.no_grad():
     fplot, ax = plt.subplots(1, 1, figsize=(4, 6))
-    ax.plot(t.numpy(),true_x[:, 0, 0].numpy())
-    ax.plot(t.numpy(), true_x[:, 1, 0].numpy())
-    ax.plot(t.numpy(),pred_x[:, 0, 0].detach().numpy(),'-.')
-    ax.plot(t.numpy(), pred_x[:, 1, 0].detach().numpy(),'-.')
+    ax.plot(batch_t.numpy(),batch_x[:, 0, 0].numpy())
+    ax.plot(batch_t.numpy(), batch_x[:, 1, 0].numpy())
+    ax.plot(batch_t.numpy(),pred_x[:, 0, 0].detach().numpy(),'-.')
+    ax.plot(batch_t.numpy(), pred_x[:, 1, 0].detach().numpy(),'-.')
     ax.set_xlabel('time (s)')
     ax.set_ylabel('states (x)')
     ax.legend(['pos true','vel true','pos model', 'vel model'])

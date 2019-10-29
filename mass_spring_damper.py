@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
-epochs = 300
+epochs = 900
 use_adjoint = True
 batch_size = 100
 run_time = 25.0
@@ -39,7 +39,7 @@ with torch.no_grad():
 
 def get_batch():
     s = np.random.choice(np.arange(data_size-batch_size),replace=False)
-    batch_t = t[s:s+batch_size]
+    batch_t = t[s:s+batch_size]-t[s]
     batch_x0 = true_x[s, :, 0].unsqueeze(1)
     batch_x = true_x[s:s+batch_size, :, 0]
     return batch_x0, batch_t, batch_x
@@ -74,19 +74,25 @@ train_loss = np.empty([epochs, 1])
 
 for epoch in range(epochs):
     optimizer.zero_grad()
-    # batch_x0, batch_t, batch_x = get_batch()
-    # pred_x = odeint(model, batch_x0, batch_t)
-    # loss = criterion(batch_x.view(batch_size*2),pred_x.view(batch_size*2))
-    pred_x = odeint(model, true_x0, t)
-    loss = criterion(true_x.view(data_size*2),pred_x.view(data_size*2))
+    batch_x0, batch_t, batch_x = get_batch()
+    pred_x = odeint(model, batch_x0, batch_t)
+    loss = criterion(batch_x.view(batch_size*2),pred_x.view(batch_size*2))
+    # pred_x = odeint(model, true_x0, t)
+    # loss = criterion(true_x.view(data_size*2),pred_x.view(data_size*2))
     loss.backward()
     optimizer.step()
     train_loss[epoch] = loss.detach().numpy()
     # scheduler.step(loss)
     print('Epoch ', epoch, ': loss ', loss.item())
 
+
+
 with torch.no_grad():
     pred_x = odeint(model, true_x0, t)
+
+
+# To save trained model
+torch.save(model.state_dict(), './msd_nn2.pt')
 
 with torch.no_grad():
     fplot, ax = plt.subplots(2, 1, figsize=(4, 6))
