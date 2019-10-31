@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 
 
-load_data = True
 epochs = 900
 use_adjoint = True
 batch_size = 100
@@ -31,6 +30,9 @@ class MassSpringDamper(nn.Module):
         dx = self.A.mm(x)
         return dx
 
+
+
+
 def load_exp(i=0):
     data = pd.read_csv('data_set_'+str(i)+'.csv')
     x1 = data['y1']
@@ -42,30 +44,30 @@ def load_exp(i=0):
     t = torch.from_numpy(data['time'].values)
     return t, true_x, true_x0
 
+class DataLoader:
+    def __init__(self, exp=0):
+        self.t, self.x, self.x0 = load_exp(exp)
 
-if load_data:
-    # data = pd.read_csv('data_set_0.csv')
-    # x1 = data['y1']
-    # n = np.size(x1)
-    # true_x = torch.empty(n,2,1)
-    # true_x[:, 0, 0] = torch.from_numpy(x1.values)
-    # true_x[:, 1, 0] = torch.from_numpy(data['y2'].values)
-    # true_x0 = true_x[1, :, :]
-    # t = torch.from_numpy(data['time'].values)
-    t, true_x, true_x0 = load_exp(0)
-else:
-    with torch.no_grad():
-        true_x0 = torch.Tensor([[1.0], [0.0]])
-        t = torch.linspace(0.0, run_time, data_size)
-        true_x = odeint(MassSpringDamper(), true_x0, t, method='dopri5')
+    def get_batch(self):
+        s = np.random.choice(np.arange(data_size - batch_size), replace=False)
+        batch_t = self.t[s:s + batch_size] - self.t[s]
+        batch_x0 = self.x[s, :, 0].unsqueeze(1)
+        batch_x = self.x[s:s + batch_size, :, 0]
+        return batch_x0, batch_t, batch_x
 
 
-def get_batch(t, true_x):
-    s = np.random.choice(np.arange(data_size-batch_size),replace=False)
-    batch_t = t[s:s+batch_size]-t[s]
-    batch_x0 = true_x[s, :, 0].unsqueeze(1)
-    batch_x = true_x[s:s+batch_size, :, 0]
-    return batch_x0, batch_t, batch_x
+# this will be the validation set
+t, true_x, true_x0 = load_exp(0)
+
+# these will be the training sets
+datloaders = [DataLoader(1), DataLoader(2), DataLoader(3), DataLoader(4)]
+
+# def get_batch(t, true_x):
+#     s = np.random.choice(np.arange(data_size-batch_size),replace=False)
+#     batch_t = t[s:s+batch_size]-t[s]
+#     batch_x0 = true_x[s, :, 0].unsqueeze(1)
+#     batch_x = true_x[s:s+batch_size, :, 0]
+#     return batch_x0, batch_t, batch_x
 
 class ODEFunc(nn.Module):
     def __init__(self):
@@ -98,7 +100,10 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[500], ga
 
 for epoch in range(epochs):
     optimizer.zero_grad()
-    batch_x0, batch_t, batch_x = get_batch(t, true_x)
+    # choose experiment
+    exp = epoch % 4
+    # get batch from that experiment
+    batch_x0, batch_t, batch_x = datloaders[exp].get_batch()
     pred_x = odeint(model, batch_x0, batch_t)
     loss = criterion(batch_x.view(batch_size*2),pred_x.view(batch_size*2))
     # pred_x = odeint(model, true_x0, t)
