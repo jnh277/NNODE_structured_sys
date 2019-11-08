@@ -7,7 +7,7 @@ import numpy as np
 import derivnets
 
 
-epochs = 200
+epochs = 500
 use_adjoint = True
 batch_size = 250
 run_time = 25.0
