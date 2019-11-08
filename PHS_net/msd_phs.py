@@ -8,10 +8,9 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import derivnets
-import models
 
-epochs = 900
-use_adjoint = False
+epochs = 200
+use_adjoint = True      # this actually seems to work in my other test
 batch_size = 225
 run_time = 25.0
 data_size = 250
@@ -83,14 +82,15 @@ datloaders = [DataLoader(1), DataLoader(2), DataLoader(3), DataLoader(4)]
 class PHS_Func(nn.Module):
     def __init__(self):
         super(PHS_Func, self).__init__()
-        self.Hnet = models.DerivNet2D(2,25,10,1)
+        self.Hnet = derivnets.DerivNet(nn.Linear(2, 50), nn.Tanh(), nn.Linear(50, 1))
         self.dnet = nn.Sequential(nn.Linear(1,10), nn.Tanh(), nn.Linear(10,1))
 
     def forward(self, t, x):
         H, dHdx1,dHdx2 = self.Hnet(x.t())
+        sd = self.dnet(x[1])
         dx = torch.empty(2, 1)
         dx[0] = dHdx2  # q dot
-        dx[1] = -dHdx1 - self.dnet(x[1])  # p dot
+        dx[1] = -dHdx1 - sd*sd*dHdx2  # p dot
         return dx
 
 # class PHS_Func(nn.Module):
