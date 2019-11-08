@@ -49,9 +49,9 @@ def get_batch(t, true_x):
         s = np.random.choice(np.arange(data_size-batch_size),replace=False)
     else:
         s = 0
-    batch_t = t[s:s+batch_size]-t[s]
+    batch_t = t[s:s+batch_size-1]-t[s]
     batch_x0 = true_x[s, :, 0].unsqueeze(1)
-    batch_x = true_x[s:s+batch_size, :, 0]
+    batch_x = true_x[s:s+batch_size-1, :, 0]
     return batch_x0, batch_t, batch_x
 
 class PHS_Func(nn.Module):
@@ -96,12 +96,21 @@ for epoch in range(epochs):
 
 
 
+# To save trained model
+torch.save(model.state_dict(), './msd_phs.pt')
+
+#to load model
+# model2 = PHS_Func()
+# model2.load_state_dict(torch.load('./msd_phs.pt'))
+# model2.eval()
+
 with torch.no_grad():
     pred_x = odeint(model, true_x0, t)
 
 
-# To save trained model
-# torch.save(model.state_dict(), './msd_nn2.pt')
+
+
+
 
 with torch.no_grad():
     fplot, ax = plt.subplots(2, 1, figsize=(4, 6))
