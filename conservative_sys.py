@@ -7,7 +7,7 @@ import numpy as np
 import derivnets
 
 
-epochs = 500
+epochs = 3000
 use_adjoint = True
 batch_size = 100
 run_time = 25.0
@@ -74,7 +74,7 @@ criterion = torch.nn.MSELoss()
 # optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 train_loss = np.empty([epochs, 1])
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[500], gamma=0.1, last_epoch=-1)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2000], gamma=0.1, last_epoch=-1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=50,
 #                                                        min_lr=1e-4,
 #                                                        factor=0.1,
