@@ -7,12 +7,12 @@ import numpy as np
 import derivnets
 
 
-epochs = 500
+epochs = 4000
 use_adjoint = True
-batch_size = 250
+batch_size = 100
 run_time = 25.0
 data_size = 250
-noise_std = 0.001
+noise_std = 0.000
 
 if use_adjoint:
     from torchdiffeq import odeint_adjoint as odeint
@@ -58,23 +58,29 @@ class PHS_Func(nn.Module):
     def __init__(self):
         super(PHS_Func, self).__init__()
         self.Hnet = derivnets.DerivNet(nn.Linear(2,50), nn.Tanh(), nn.Linear(50,1))
-        self.dnet = nn.Sequential(nn.Linear(1,10), nn.Tanh(), nn.Linear(10,1))
+        # self.dnet = nn.Sequential(nn.Linear(1,50), nn.Tanh(), nn.Linear(50,1))
+        self.dnet = nn.Sequential(nn.Linear(1, 15), nn.Tanh(), nn.Linear(15, 1), nn.Sigmoid())
 
     def forward(self, t, x):
         H, dHdx = self.Hnet(x.t())
-        sd = self.dnet(x[1])
+        # sd = self.dnet(x[1])
+        d = self.dnet(x[1].abs())
         dx = torch.empty(2, 1)
         dx[0] = dHdx[1]  # q dot
-        dx[1] = -dHdx[0] - sd * sd * dHdx[1]
+        # dx[1] = -dHdx[0] - sd * sd * dHdx[1]
+        dx[1] = -dHdx[0] - x[1] * d
         return dx
 
 
 model = PHS_Func()
+model.load_state_dict(torch.load('./msd_phs3.pt'))
+model.train()
+
 criterion = torch.nn.MSELoss()
-# optimizer = optim.RMSprop(model.parameters(), lr=1e-4)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
+# optimizer = optim.RMSprop(model.parameters(), lr=1e-4, momentum=0.5)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 train_loss = np.empty([epochs, 1])
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[500], gamma=0.1, last_epoch=-1)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2000, 4000], gamma=0.1, last_epoch=-1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=50,
 #                                                        min_lr=1e-4,
 #                                                        factor=0.1,
@@ -97,7 +103,7 @@ for epoch in range(epochs):
 
 
 # To save trained model
-torch.save(model.state_dict(), './msd_phs.pt')
+torch.save(model.state_dict(), './msd_phs3.pt')
 
 #to load model
 # model2 = PHS_Func()

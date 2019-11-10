@@ -7,12 +7,12 @@ import numpy as np
 import derivnets
 
 
-epochs = 3000
+epochs = 1000
 use_adjoint = True
-batch_size = 100
+batch_size = 30
 run_time = 25.0
 data_size = 250
-noise_std = 0.000
+noise_std = 0.01
 
 if use_adjoint:
     from torchdiffeq import odeint_adjoint as odeint
@@ -40,9 +40,9 @@ with torch.no_grad():
     true_x = odeint(MassSpringDamper(b=0.0), true_x0, t, method='dopri5')
 
 # add some noise
-# meas_x = true_x + noise_std * torch.randn(data_size, 2, 1)
+meas_x = true_x + noise_std * torch.randn(data_size, 2, 1)
 # meas_x[1,:,:] = true_x[1,:,:]   # no noise on initial state
-meas_x = true_x
+# meas_x = true_x
 
 
 def get_batch(t, true_x):
@@ -83,7 +83,7 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2000], g
 for epoch in range(epochs):
     optimizer.zero_grad()
     batch_x0, batch_t, batch_x = get_batch(t, meas_x)
-    pred_x = odeint(model, batch_x0, batch_t, method='fixed_adams')
+    pred_x = odeint(model, batch_x0, batch_t)
     # loss = criterion(batch_x.view(batch_size*2),pred_x.view(batch_size*2))  # somehow have a momentum sensor
     # train only against position state
     loss = criterion(batch_x[:, 0], pred_x[:, 0, 0])
