@@ -9,7 +9,7 @@ import derivnets
 
 epochs = 6000
 use_adjoint = True
-batch_size = 3
+batch_size = 100
 run_time = 25.0
 data_size = 250
 noise_std = 0.000
@@ -45,7 +45,7 @@ meas_x[1,:,:] = true_x[1,:,:]   # no noise on initial state
 
 
 def get_batch(t, true_x):
-    if data_size - batch_size:
+    if data_size - batch_size > 0:
         s = np.random.choice(np.arange(data_size-batch_size),replace=False)
     else:
         s = 0
@@ -59,17 +59,17 @@ class PHS_Func(nn.Module):
         super(PHS_Func, self).__init__()
         self.Hnet = derivnets.DerivNet(nn.Linear(2,50), nn.Tanh(), nn.Linear(50,1))
         # self.dnet = nn.Sequential(nn.Linear(1,50), nn.Tanh(), nn.Linear(50,1))
-        self.dnet = nn.Sequential(nn.Linear(1, 25), nn.Tanh(), nn.Linear(25, 1))
+        self.dnet = nn.Sequential(nn.Linear(1, 15), nn.Tanh(), nn.Linear(15, 1))
 
     def forward(self, t, x):
         H, dHdx = self.Hnet(x.t())
         # sd = self.dnet(x[1])
-        sd = self.dnet(x[1].abs())
+        d = self.dnet(x[1].abs())
         dx = torch.empty(2, 1)
         dx[0] = dHdx[1]  # q dot
-        dx[1] = -dHdx[0] - sd * sd * dHdx[1]
+        # dx[1] = -dHdx[0] - sd * sd * dHdx[1]
         # dx[1] = -dHdx[0] - sd * sd * x[1]
-        # dx[1] = -dHdx[0] - x[1] * d
+        dx[1] = -dHdx[0] - x[1] * d
         return dx
 
 
@@ -93,7 +93,9 @@ for epoch in range(epochs):
     pred_x = odeint(model, batch_x0, batch_t)
     # loss = criterion(batch_x.view(batch_size*2),pred_x.view(batch_size*2))  # somehow have a momentum sensor
     # train only against position state
-    loss = criterion(batch_x[:, 0], pred_x[:, 0, 0])
+    pred_diff = pred_x[1:-1, 0, 0] - pred_x[0:-2, 0, 0]
+    true_diff = batch_x[1:-1, 0] - batch_x[0:-2, 0]
+    loss = criterion(true_diff, pred_diff)
     loss.backward()
     optimizer.step()
     train_loss[epoch] = loss.detach().numpy()
@@ -104,7 +106,7 @@ for epoch in range(epochs):
 
 
 # To save trained model
-torch.save(model.state_dict(), './msd_phs4.pt')
+torch.save(model.state_dict(), './msd_phs5.pt')
 
 #to load model
 # model2 = PHS_Func()
