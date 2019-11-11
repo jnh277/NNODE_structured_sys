@@ -59,17 +59,17 @@ class PHS_Func(nn.Module):
         super(PHS_Func, self).__init__()
         self.Hnet = derivnets.DerivNet(nn.Linear(2,50), nn.Tanh(), nn.Linear(50,1))
         # self.dnet = nn.Sequential(nn.Linear(1,50), nn.Tanh(), nn.Linear(50,1))
-        self.dnet = nn.Sequential(nn.Linear(1, 15), nn.Tanh(), nn.Linear(15, 1))
+        self.dnet = nn.Sequential(nn.Linear(1, 25), nn.Tanh(), nn.Linear(25, 1))
 
     def forward(self, t, x):
         H, dHdx = self.Hnet(x.t())
-        # sd = self.dnet(x[1])
-        d = self.dnet(x[1].abs())
+        sd = self.dnet(x[1])
+        # d = self.dnet(x[1].abs())
         dx = torch.empty(2, 1)
         dx[0] = dHdx[1]  # q dot
-        # dx[1] = -dHdx[0] - sd * sd * dHdx[1]
+        dx[1] = -dHdx[0] - sd * sd * dHdx[1]
         # dx[1] = -dHdx[0] - sd * sd * x[1]
-        dx[1] = -dHdx[0] - x[1] * d
+        # dx[1] = -dHdx[0] - x[1] * d
         return dx
 
 
@@ -106,7 +106,7 @@ for epoch in range(epochs):
 
 
 # To save trained model
-torch.save(model.state_dict(), './msd_phs5.pt')
+torch.save(model.state_dict(), './msd_phs6.pt')
 
 #to load model
 # model2 = PHS_Func()
