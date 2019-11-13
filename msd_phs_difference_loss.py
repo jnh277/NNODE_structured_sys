@@ -59,7 +59,7 @@ class PHS_Func(nn.Module):
         super(PHS_Func, self).__init__()
         self.Hnet = derivnets.DerivNet(nn.Linear(2,50), nn.Tanh(), nn.Linear(50,1))
         # self.dnet = nn.Sequential(nn.Linear(1,50), nn.Tanh(), nn.Linear(50,1))
-        self.dnet = nn.Sequential(nn.Linear(1, 50), nn.Tanh(), nn.Linear(50, 1))
+        self.dnet = nn.Sequential(nn.Linear(1, 50), nn.Tanh(), nn.Linear(50, 25), nn.Tanh(), nn.Linear(25, 1))
 
     def forward(self, t, x):
         H, dHdx = self.Hnet(x.t())
@@ -67,7 +67,7 @@ class PHS_Func(nn.Module):
         # d = self.dnet(x[1].abs())
         dx = torch.empty(2, 1)
         dx[0] = dHdx[1]  # q dot
-        dx[1] = -dHdx[0] - sd * sd * dHdx[1]
+        dx[1] = -dHdx[0] - sd.pow(2) * dHdx[1]
         # dx[1] = -dHdx[0] - sd * sd * x[1]
         # dx[1] = -dHdx[0] - x[1] * d
         return dx
