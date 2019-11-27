@@ -35,16 +35,12 @@ class RCLcircuit(nn.Module):
         dHdx[1] = x[1]/self.L
 
         Ha, dHadx = self.Hnet(x.t())
-        # print(dHadx)
 
         input = torch.empty(2, 1)
         input[0] = 0
         input[1] = dHadx[1]
 
-        # dx = self.F.mm(dHdx)
-        # print(dx.size())
         dx = self.F.mm(dHdx) + input
-        # dx = self.F.mm(dHdx)
         return dx
 
 model = RCLcircuit()
@@ -68,26 +64,34 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2000], g
 #                                                        factor=0.1,
 #                                                        cooldown=25)
 
+# Define target equilibrium and build vector to compare to ODE sover ouput
+u_star = 5
+tar_eq = torch.Tensor([[model.C*u_star, 0], [0, (model.L/model.R)*u_star]])
+reference_x = torch.ones(true_x[:, :, 0].size())
+reference_x = reference_x.mm(tar_eq)
 
-batch_x = torch.zeros(true_x[:, 0, 0].size())
-print(batch_x.size())
+# preallocate tensors for constraint component of the loss function
+constaint_tensor = torch.zeros(true_x[:, 0, 0].size())
+reference_zero = torch.zeros(true_x[:, 0, 0].size())
+
 for epoch in range(epochs):
     optimizer.zero_grad()
     # batch_x0, batch_t, batch_x = get_batch(t, meas_x)
     batch_x0 = torch.Tensor([[np.random.rand()], [np.random.rand()]])
     pred_x = odeint(model, batch_x0, batch_t)
+
     x_new = pred_x.clone().detach()
+    # x_new = pred_x
     nt = x_new.size(0)
     H = []
-    dHdx = []
+    # dHdx = []
+    dHdx = torch.ones(true_x[:, 0, 0].size())
     for i in range(nt):
         Hi, dHdxi = model.Hnet(x_new[i, :, :].t())
-        dHdx.append(dHdxi)
-    # loss = criterion(batch_x.view(batch_size*2),pred_x.view(batch_size*2))  # somehow have a momentum sensor
-    # train only against position state
-    # print(pred_x[:, 0, 0])
-    # dev = Gp*F*dHadx
-    loss = criterion(batch_x, pred_x[:, 0, 0])
+        constaint_tensor[i] = dHdxi[1] - dHdxi[0]/model.R
+
+    # Construct loss function---contains penalty for deviation from equilibrium and violating G perp PDE
+    loss = criterion(reference_x[:,0], pred_x[:, 0, 0]) + criterion(reference_x[:,1], pred_x[:, 1, 0]) + criterion(constaint_tensor, reference_zero)
     loss.backward()
     optimizer.step()
     train_loss[epoch] = loss.detach().numpy()
