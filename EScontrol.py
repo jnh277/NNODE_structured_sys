@@ -7,7 +7,7 @@ import numpy as np
 import derivnets
 
 
-epochs = 1
+epochs = 10
 use_adjoint = True
 batch_size = 30
 run_time = 0.5
@@ -38,7 +38,7 @@ class RCLcircuit(nn.Module):
 
         input = torch.empty(2, 1)
         input[0] = 0
-        input[1] = dHadx[1]
+        input[1] = -dHadx[1]
 
         dx = self.F.mm(dHdx) + input
         return dx
