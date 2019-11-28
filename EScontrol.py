@@ -105,8 +105,8 @@ for epoch in range(epochs):
 #     pred_x = odeint(model, true_x0, t)
 #
 #
-# # To save trained model
-# # torch.save(model.state_dict(), './msd_nn2.pt')
+# To save trained model
+torch.save(model.state_dict(), './nn_ctrl_elec.pt')
 #
 # with torch.no_grad():
 #     fplot, ax = plt.subplots(2, 1, figsize=(4, 6))
