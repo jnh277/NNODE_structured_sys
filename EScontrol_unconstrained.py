@@ -27,7 +27,7 @@ class RCLcircuit(nn.Module):
         self.L = L
         self.F = torch.Tensor([[-1/self.R, 1], [-1, 0]])
         self.G = torch.Tensor([[0], [1]])
-        self.Hnet = derivnets.DerivNet(nn.Linear(1,30), nn.Tanh(), nn.Linear(30,1))
+        self.Hnet = derivnets.DerivNet(nn.Linear(1,40), nn.Tanh(), nn.Linear(40,1))
 
     def forward(self, t, x):
         dHdx = torch.empty(2, 1)
@@ -68,7 +68,7 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2000], g
 #                                                        cooldown=25)
 
 # Define target equilibrium and build vector to compare to ODE sover ouput
-u_star = 1
+u_star = 10
 tar_eq = torch.Tensor([[model.C*u_star, 0], [0, (model.L/model.R)*u_star]])
 reference_x = torch.ones(true_x[:, :, 0].size())
 reference_x = reference_x.mm(tar_eq)
@@ -82,16 +82,6 @@ for epoch in range(epochs):
     # batch_x0, batch_t, batch_x = get_batch(t, meas_x)
     batch_x0 = torch.Tensor([[np.random.rand()], [np.random.rand()]])
     pred_x = odeint(model, batch_x0, batch_t)
-
-    # x_new = pred_x.clone().detach()
-    # # x_new = pred_x
-    # nt = x_new.size(0)
-    # H = []
-    # # dHdx = []
-    # dHdx = torch.ones(true_x[:, 0, 0].size())
-    # for i in range(nt):
-    #     Hi, dHdxi = model.Hnet(x_new[i, :, :].t())
-    #     constaint_tensor[i] = dHdxi[1] - dHdxi[0]/model.R
 
     # Construct loss function---contains penalty for deviation from equilibrium and violating G perp PDE
     loss = criterion(reference_x[:,0], pred_x[:, 0, 0]) + criterion(reference_x[:,1], pred_x[:, 1, 0])
