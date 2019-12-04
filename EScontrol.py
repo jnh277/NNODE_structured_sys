@@ -71,7 +71,7 @@ reference_x = torch.ones(true_x[:, :, 0].size())
 reference_x = reference_x.mm(tar_eq)
 
 # preallocate tensors for constraint component of the loss function
-constaint_tensor = torch.zeros(true_x[:, 0, 0].size())
+constraint_tensor2 = torch.zeros(true_x[:, 0, 0].size())
 reference_zero = torch.zeros(true_x[:, 0, 0].size())
 
 for epoch in range(epochs):
@@ -83,15 +83,15 @@ for epoch in range(epochs):
     x_new = pred_x.clone().detach()
     # x_new = pred_x
     nt = x_new.size(0)
-    H = []
+    # H = []
     # dHdx = []
-    dHdx = torch.ones(true_x[:, 0, 0].size())
-    for i in range(nt):
-        Hi, dHdxi = model.Hnet(x_new[i, :, :].t())
-        constaint_tensor[i] = dHdxi[1] - dHdxi[0]/model.R
+    # dHdx = torch.ones(true_x[:, 0, 0].size())
+    Hi, dHdxi = model.Hnet(x_new[:, :, 0])
+    constraint_tensor = dHdxi[1] - dHdxi[0]/model.R
 
     # Construct loss function---contains penalty for deviation from equilibrium and violating G perp PDE
-    loss = criterion(reference_x[:,0], pred_x[:, 0, 0]) + criterion(reference_x[:,1], pred_x[:, 1, 0]) + criterion(constaint_tensor, reference_zero)
+    # loss = criterion(reference_x[:,0], pred_x[:, 0, 0]) + criterion(reference_x[:,1], pred_x[:, 1, 0]) # + criterion(constaint_tensor, reference_zero)
+    loss = criterion(reference_x, pred_x[:,:,0]) + criterion(constraint_tensor.squeeze(), reference_zero) #
     loss.backward()
     optimizer.step()
     train_loss[epoch] = loss.detach().numpy()
