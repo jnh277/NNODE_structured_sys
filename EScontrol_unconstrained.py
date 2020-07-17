@@ -7,7 +7,7 @@ import numpy as np
 import derivnets
 
 
-epochs = 500
+epochs = 2000
 use_adjoint = True
 batch_size = 30
 run_time = 0.5
@@ -19,6 +19,7 @@ if use_adjoint:
 else:
     from torchdiffeq import odeint
 
+# ------- Using old derivnets class
 class RCLcircuit(nn.Module):
     def __init__(self, R=5.0, C=0.01, L=0.005):
         super(RCLcircuit, self).__init__()
@@ -45,6 +46,7 @@ class RCLcircuit(nn.Module):
 
         dx = self.F.mm(dHdx) + input
         return dx
+
 
 model = RCLcircuit()
 batch_t = torch.linspace(0.0, run_time, data_size)

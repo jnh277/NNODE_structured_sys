@@ -1,8 +1,21 @@
 import torch
 import math
+import torch.autograd as ag
 import sys
 from torch.utils import data
 
+class DerivNet_v2(torch.nn.Module):
+    def __init__(self, base_net):
+        super(DerivNet_v2, self).__init__()
+        self.base_net = base_net
+
+    def forward(self, x):
+        torch.enable_grad()
+        x.requires_grad = True
+        y = self.base_net(x)
+        dydx = ag.grad(outputs=y, inputs=x, create_graph=True, grad_outputs=torch.ones(y.size()),
+                       retain_graph=True, only_inputs=True)[0]
+        return y, dydx
 
 class DerivTanh(torch.nn.Module):
     def __init__(self):
