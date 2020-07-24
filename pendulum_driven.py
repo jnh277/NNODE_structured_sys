@@ -18,12 +18,13 @@ num_data_sets = 2
 min_mass = 1e-2         # seeing if this makes the solver perform better
 
 # som training options, setting batch_size_min = 500 will force it to use entire set each time
-epochs = 10
-training_milestones = [500,700,900]        # epochs at which to reduce learning rate
+epochs = 1000
+training_milestones = [250,500,750]        # epochs at which to reduce learning rate
 batch_size_max = 400
 batch_size_min = 100
 lr_start = 0.01
 gamma = 0.5     # learning rate reduction factor
+weight_decay = 0.1          # maybe this will help
 
 # add in absolute difference to cost along with a weighting factor
 abs_weighting = 1e-3
@@ -174,7 +175,7 @@ model = PHS_Func(input_generator0)
 # define criterior, optimiser and scheduler
 criterion = torch.nn.MSELoss()
 # optimizer = optim.RMSprop(model.parameters(), lr=1e-4, momentum=0.5
-optimizer = torch.optim.Adam(model.parameters(), lr=lr_start)
+optimizer = torch.optim.Adam(model.parameters(), lr=lr_start, weight_decay=weight_decay)
 train_loss = np.empty([epochs, 1])
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=training_milestones, gamma=gamma, last_epoch=-1)
 
